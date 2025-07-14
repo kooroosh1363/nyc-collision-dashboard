@@ -72,6 +72,8 @@ streamlit run app_ui_pro.py
 4. Set `app.py` or `app_ui_pro.py` as the main file
 5. Done! 🚀
 
+Live App 👉 [https://nyc-collision-dashboard-xru5gcgjhrxkhhmuvghhjd.streamlit.app](https://nyc-collision-dashboard-xru5gcgjhrxkhhmuvghhjd.streamlit.app)
+
 ---
 
 ## 🛠 Built With
