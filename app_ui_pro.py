@@ -136,3 +136,7 @@ with tab6:
 
 st.markdown("---")
 st.caption("Built with ❤️ using Streamlit | Design: Ultra Pro Edition 🚀")
+
+
+#address:https://nyc-collision-dashboard-xru5gcgjhrxkhhmuvghhjd.streamlit.app
+#for run you have to write: streamlit run app_ui_pro.py
