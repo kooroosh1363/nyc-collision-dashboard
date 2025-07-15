@@ -15,10 +15,13 @@ def load_data(path='data/collisions.csv'):
     df['DATETIME'] = pd.to_datetime(df['DATE'] + ' ' + df['TIME'], errors='coerce')
     df['HOUR'] = df['DATETIME'].dt.hour
     df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')
+    df['WEEK'] = df['DATE'].dt.isocalendar().week
+    df['MONTH'] = df['DATE'].dt.month
+    df['YEAR'] = df['DATE'].dt.year
     return df
 
 # Sidebar Filters
-st.sidebar.header("📊 Filters")
+st.sidebar.header("Filters")
 
 uploaded_file = st.sidebar.file_uploader("Upload CSV File", type=['csv'])
 df = load_data(uploaded_file) if uploaded_file else load_data()
@@ -38,12 +41,12 @@ selected_vehicles = st.sidebar.multiselect("Vehicle Type(s)", sorted(vehicle_typ
 if selected_vehicles:
     df = df[df['VEHICLE 1 TYPE'].isin(selected_vehicles)]
 
-st.title("🚦 NYC Traffic Collision Dashboard")
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📈 Trends", "🗺️ Map", "⬇️ Export"])
+st.title("NYC Traffic Collision Dashboard")
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Overview", "Trends", "Map", "Export", "Compare Boroughs", "Search"])
 
 # Tab 1: Overview
 with tab1:
-    st.subheader("🔢 Key Metrics")
+    st.subheader("Key Metrics")
     k1, k2, k3 = st.columns(3)
     k1.metric("Total Collisions", f"{len(df):,}")
     k2.metric("Total Injuries", int(df['PERSONS INJURED'].sum()))
@@ -63,14 +66,18 @@ with tab1:
 
 # Tab 2: Trends
 with tab2:
-    st.subheader("🕒 Collisions by Hour")
-    hour_count = df['HOUR'].value_counts().sort_index()
-    fig2, ax2 = plt.subplots(figsize=(10, 4))
-    sns.lineplot(x=hour_count.index, y=hour_count.values, marker='o', ax=ax2)
-    ax2.set_title("Collisions Per Hour")
-    ax2.set_xlabel("Hour")
-    ax2.set_ylabel("Number of Collisions")
-    st.pyplot(fig2)
+    st.subheader("Collisions Over Time")
+    option = st.selectbox("Time Unit", options=['Hour', 'Week', 'Month', 'Year'])
+    time_column = option.upper()
+    
+    if time_column in df:
+        trend_data = df[time_column].value_counts().sort_index()
+        fig, ax = plt.subplots(figsize=(10, 4))
+        sns.lineplot(x=trend_data.index, y=trend_data.values, marker='o', ax=ax)
+        ax.set_title(f"Collisions per {option}")
+        ax.set_xlabel(option)
+        ax.set_ylabel("Number of Collisions")
+        st.pyplot(fig)
 
     with st.expander("Contributing Factors"):
         if 'VEHICLE 1 FACTOR' in df.columns:
@@ -82,7 +89,7 @@ with tab2:
 
 # Tab 3: Map
 with tab3:
-    st.subheader("🗺️ Collision Locations")
+    st.subheader("Collision Locations")
     if 'LATITUDE' in df.columns and 'LONGITUDE' in df.columns:
         latlon_df = df[['LATITUDE', 'LONGITUDE']].dropna()
         if not latlon_df.empty:
@@ -99,7 +106,7 @@ with tab3:
 
 # Tab 4: Export
 with tab4:
-    st.subheader("⬇️ Download Filtered Data")
+    st.subheader("Download Filtered Data")
     st.download_button(
         label="Download CSV",
         data=df.to_csv(index=False).encode("utf-8"),
@@ -108,9 +115,24 @@ with tab4:
     )
     st.markdown("You can download the currently filtered dataset for further analysis.")
 
+# Tab 5: Compare Boroughs
+with tab5:
+    st.subheader("Compare Boroughs")
+    borough_metrics = df.groupby('BOROUGH')[['PERSONS INJURED', 'PERSONS KILLED']].sum()
+    fig_cb, ax_cb = plt.subplots(figsize=(10, 5))
+    borough_metrics.plot(kind='barh', stacked=True, ax=ax_cb, colormap='tab20')
+    ax_cb.set_title("Injuries and Fatalities by Borough")
+    st.pyplot(fig_cb)
+
+# Tab 6: Search
+with tab6:
+    st.subheader("Search Specific Record")
+    search_term = st.text_input("Search by Unique Key, Zip Code or Contributing Factor")
+    if search_term:
+        mask = df.apply(lambda row: search_term.lower() in str(row).lower(), axis=1)
+        results = df[mask]
+        st.write(f"Found {len(results)} records")
+        st.dataframe(results.head(100))
+
 st.markdown("---")
-st.caption("Built with ❤️ using Streamlit | Design: Pro UI Edition 🚀")
-
-# Run this app using: streamlit run app_ui_pro.py
-
-#for run this code you have to write : streamlit run app_ui_pro.py
+st.caption("Built with ❤️ using Streamlit | Design: Ultra Pro Edition 🚀")
